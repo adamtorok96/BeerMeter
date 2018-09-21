@@ -5,23 +5,32 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:weightSum="2"
     tools:context=".MainActivity">
 
     <TextView
         android:id="@+id/tvTime"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical|center_horizontal"
         android:text="Time"
         android:textSize="36sp" />
 
+    <TextView
+        android:id="@+id/tvSensivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sensivity: 12" />
+
+    <SeekBar
+        android:id="@+id/sbSensivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="15"
+        android:progress="8" />
+
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="16dp"
-        android:layout_weight="1" />
-
+        android:layout_height="wrap_content"
+        android:keepScreenOn="true" />
 </LinearLayout>

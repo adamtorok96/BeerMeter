@@ -9,18 +9,20 @@ import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, SeekBar.OnSeekBarChangeListener {
 
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -28,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private boolean mStarted = false;
 
+    private double mSensitivity = 12;
     private double mCounter = 0;
 
     private long mStartTime, mEndTime;
@@ -36,7 +39,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private Thread mThread;
 
-    private TextView mTvTime;
+    private SeekBar sbSensitivity;
+    private TextView mTvTime, tvSensitivity;
+
+    private DecimalFormat mDecimalFormat = new DecimalFormat("#.00");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,21 +62,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
         mTvTime = findViewById(R.id.tvTime);
+        tvSensitivity = findViewById(R.id.tvSensivity);
+
+        sbSensitivity = findViewById(R.id.sbSensivity);
 
         GraphView graph = findViewById(R.id.graph);
+        graph.getGridLabelRenderer().setPadding(100);
 
         mSeries = new LineGraphSeries<>();
         graph.addSeries(mSeries);
         graph.getViewport().setXAxisBoundsManual(true);
         graph.getViewport().setMinX(0);
-        graph.getViewport().setMaxX(40);
+        graph.getViewport().setMaxX(100);
+        graph.getViewport().setMinY(0);
+        graph.getViewport().setMaxY(100);
+
+        sbSensitivity.setOnSeekBarChangeListener(this);
 
         mThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 while( true ) {
                     try {
-                        Thread.sleep(10);
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -96,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             return;
         }
 
-        mTvTime.setText(String.valueOf(getElapsedMilliseconds()));
+        mTvTime.setText(mDecimalFormat.format(getElapsedMilliseconds()));
     }
 
     private boolean isMainThread() {
@@ -129,22 +143,35 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         double length = getVectorLength(event.values);
 
-        if( length < 11 )
+        if( System.currentTimeMillis() % 100 == 0 ) {
+            mSeries.appendData(
+                    new DataPoint(
+                            mCounter++, // Calendar.getInstance().getTime(),
+                            length
+                    ),
+                    true,
+                    60
+            );
+        }
+
+        if( length < mSensitivity )
             return;
 
         Log.i("DEBUG", String.valueOf(length));
 
         if( mStarted ) {
-            if( getElapsedSeconds() > 1 ) {
+            if( getElapsedSeconds() > 0 ) {
                 mEndTime = System.nanoTime();
                 mStarted = false;
 
                 Log.i("DEBUG", "STOPPED");
 
-                mTvTime.setText("Time: " + String.valueOf(nanoTimeToMilliSeconds(mEndTime - mStartTime)));
+
+
+                mTvTime.setText("Time: " + mDecimalFormat.format(nanoTimeToMilliSeconds(mEndTime - mStartTime)));
             }
         } else {
-            if( getElapsedSecondsFromEnd() > 1 ) {
+            if( getElapsedSecondsFromEnd() > 0 ) {
                 mStartTime = System.nanoTime();
                 mStarted = true;
 
@@ -152,14 +179,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         }
 
-        mSeries.appendData(
-                new DataPoint(
-                        mCounter++, // Calendar.getInstance().getTime(),
-                        length
-                ),
-                true,
-                40
-        );
+//        mSeries.appendData(
+//                new DataPoint(
+//                        mCounter++, // Calendar.getInstance().getTime(),
+//                        length
+//                ),
+//                true,
+//                40
+//        );
     }
 
     double getVectorLength(float[] vector) {
@@ -188,5 +215,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onPause();
 
         mSensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        mSensitivity = progress + 5;
+
+        tvSensitivity.setText("Sensivity: " + mSensitivity);
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+
     }
 }
